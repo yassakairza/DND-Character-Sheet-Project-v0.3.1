@@ -502,7 +502,7 @@
       </div>
     </div>
     <div class="hero-extra" style="margin-top:14px;">
-      <div class="badge">Level <input id="f_level" type="number" min="1" max="20" value="1" style="width:36px;background:transparent;border:none;color:inherit;font-family:inherit;"><b id="calc_level_echo"></b></div>
+      <div class="badge">Level <select id="f_level" style="width:48px;background:transparent;border:none;color:inherit;font-family:inherit;"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select><b id="calc_level_echo"></b></div>
       <div class="badge">Proficiency <b id="calc_prof">+2</b></div>
       <div class="field"><label>Experience</label><input id="f_xp" type="number" min="0" style="width:100px;"></div>
     </div>
@@ -510,7 +510,7 @@
 
   <nav class="tabs">
     <button data-tab="core" class="active">Core</button>
-    <button data-tab="combat">Combat</button>
+    <button data-tab="combat">Action</button>
     <button data-tab="features">Features</button>
     <button data-tab="spells">Spells</button>
     <button data-tab="equipment">Equipment</button>
@@ -1168,6 +1168,7 @@
       if(el && data.fields && data.fields[id] !== undefined) el.value = data.fields[id];
     });
     updateSubspeciesOptions(data.fields && data.fields.f_subspecies);
+    lastConfirmedLevel = document.getElementById('f_level').value;
     updateSubclassOptions(data.fields && data.fields.f_subclass);
     ABILITIES.forEach(a=>{
       document.getElementById('score_'+a.key).value = (data.abilities && data.abilities[a.key]) || 10;
@@ -1413,6 +1414,21 @@
     apply({});
     statusText.textContent = 'New character sheet';
   }
+
+  /* ---------- Level change confirmation ---------- */
+  // A confirmation step now; later this is where auto-filling Feats & Traits
+  // for the new level will hook in.
+  let lastConfirmedLevel = document.getElementById('f_level').value;
+  document.getElementById('f_level').addEventListener('change', (e)=>{
+    const newLevel = e.target.value;
+    if(newLevel === lastConfirmedLevel) return;
+    const proceed = confirm(`Change level from ${lastConfirmedLevel} to ${newLevel}?`);
+    if(proceed){
+      lastConfirmedLevel = newLevel;
+    } else {
+      e.target.value = lastConfirmedLevel;
+    }
+  });
 
   /* ---------- Wire up events ---------- */
   document.addEventListener('input', (e)=>{
