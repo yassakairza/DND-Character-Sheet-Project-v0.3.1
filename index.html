@@ -452,6 +452,7 @@
           <div class="field" id="subspeciesWrap" style="display:none;"><label>Sub-species</label><select id="f_subspecies"></select></div>
           <div class="field"><label>Class</label><select id="f_class">
             <option value="">— Select —</option>
+            <option value="Artificer">Artificer</option>
             <option value="Barbarian">Barbarian</option>
             <option value="Bard">Bard</option>
             <option value="Cleric">Cleric</option>
@@ -736,6 +737,7 @@
   document.getElementById('f_species').addEventListener('change', ()=> updateSubspeciesOptions());
 
   const CLASS_SUBCLASS_MAP = {
+    'Artificer': ['Alchemist','Armorer','Artillerist','Battle Smith','Cartographer'],
     'Barbarian': ['Path of Berserker','Path of Wild Heart','Path of World Tree','Path of Zealot'],
     'Bard': ['College of Dance','College of Glamour','College of Lore','College of Valor'],
     'Cleric': ['Life Domain','Light Domain','Trickery Domain','War Domain'],
