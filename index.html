@@ -309,11 +309,29 @@
   textarea.tall{ min-height: 130px; }
   textarea.epic{ min-height: 220px; }
 
-  .spell-level{ border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:10px; background: rgba(255,255,255,0.25); }
-  .spell-level .lvl-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-  .spell-level .lvl-head span{ font-family:'Cinzel',serif; color: var(--oxblood-dark); font-size:13px; }
-  .slot-inputs{ display:flex; gap:6px; align-items:center; font-size:12px; }
-  .slot-inputs input{ width:38px; text-align:center; border:1px solid var(--line); border-radius:3px; padding:2px; }
+  .slot-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(90px,1fr)); gap:8px; margin-bottom:6px; }
+  .slot-box{ text-align:center; border:1px solid var(--line); border-radius:8px; padding:8px 6px; background: rgba(255,255,255,0.25); }
+  .slot-box .slvl{ font-family:'Spectral SC',serif; font-size:10px; letter-spacing:.06em; color: var(--ink-soft); margin-bottom:4px; }
+  .slot-box .slot-io{ display:flex; align-items:center; justify-content:center; gap:3px; font-size:11px; color: var(--ink-soft); }
+  .slot-box input{ width:32px; text-align:center; border:1px solid var(--line); border-radius:4px; padding:2px; font-size:12px; background: var(--paper); color: var(--ink); }
+
+  table.spell-table{ width:100%; border-collapse:collapse; font-size:12.5px; min-width:820px; }
+  table.spell-table th{
+    font-family:'Spectral SC',serif; font-size:10px; letter-spacing:.05em; text-align:left;
+    color: var(--ink-soft); border-bottom:1px solid var(--line); padding:6px 5px; white-space:nowrap;
+  }
+  table.spell-table td{ border-bottom:1px solid rgba(185,166,124,0.35); padding:4px 5px; vertical-align:middle; }
+  table.spell-table td input[type="text"]{
+    width:100%; border:none; background:transparent; font-family:'Spectral',serif; font-size:12.5px; color: var(--ink);
+  }
+  table.spell-table td input[type="text"]:focus{ outline:none; background: rgba(255,255,255,0.5); }
+  select.spell-level-select{
+    width:58px; font-size:12px; border:1px solid var(--line); border-radius:4px; padding:2px;
+    background: rgba(255,255,255,0.4); color: var(--ink);
+  }
+  .vsm-cell, .cr-cell{ white-space:nowrap; }
+  .vsm-cell label, .cr-cell label{ font-size:10px; margin-right:7px; cursor:pointer; color: var(--ink-soft); }
+  .vsm-cell input, .cr-cell input{ width:auto; margin-right:2px; vertical-align:middle; accent-color: var(--oxblood); }
 
   .coins{ display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; }
   .coin-box{ text-align:center; }
@@ -615,8 +633,29 @@
       <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Cantrips</h2></div>
       <textarea id="f_cantrips" placeholder="Cantrips known…"></textarea>
 
-      <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Spell Slots &amp; Spells by Level</h2></div>
-      <div id="spellLevels"></div>
+      <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Spell Slots</h2></div>
+      <div class="slot-grid" id="slotGrid"></div>
+
+      <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Spells</h2></div>
+      <div style="overflow-x:auto;">
+        <table class="spell-table">
+          <thead>
+            <tr>
+              <th style="width:52px;">Lvl</th>
+              <th style="min-width:130px;">Name</th>
+              <th style="min-width:90px;">Casting Time</th>
+              <th style="min-width:80px;">Range</th>
+              <th style="min-width:80px;">V/S/M</th>
+              <th style="min-width:60px;">C/R</th>
+              <th style="min-width:140px;">Notes</th>
+              <th style="width:26px;"></th>
+            </tr>
+          </thead>
+          <tbody id="spellTableBody"></tbody>
+        </table>
+      </div>
+      <button class="row-btn" id="addSpellRow">+ Add spell</button>
+      <div id="spellCountLabel" style="font-size:11px;color:var(--ink-soft);margin-top:6px;"></div>
     </section>
 
     <!-- EQUIPMENT -->
@@ -703,12 +742,12 @@
     attacks: [],
     gear: [],
     spellSlots: {}, // level -> {total, used}
-    spellLists: {}, // level -> text
+    spellRows: [], // array of {level, name, castTime, range, v,s,m,c,r, notes}
     portrait: null,
     fields: {}
   };
   SKILLS.forEach(s => { state.skillProf[s.name] = 0; state.skillAdv[s.name] = ''; });
-  for(let i=1;i<=9;i++){ state.spellSlots[i] = {total:0, used:0}; state.spellLists[i] = ''; }
+  for(let i=1;i<=9;i++){ state.spellSlots[i] = {total:0, used:0}; }
 
   const SUBSPECIES_MAP = {
     'Dragonborn': ['Black','Blue','Brass','Bronze','Copper','Gold','Green','Red','Silver','White'],
@@ -878,23 +917,68 @@
     document.getElementById('exhaustionPenalty').textContent = (state.exhaustion>0? '−'+(state.exhaustion*2) : '0');
   }
 
-  /* ---------- Spell levels ---------- */
-  const spellLevelsWrap = document.getElementById('spellLevels');
+  /* ---------- Spell Slots (compact grid) ---------- */
+  const slotGrid = document.getElementById('slotGrid');
   for(let lvl=1; lvl<=9; lvl++){
-    const div = document.createElement('div');
-    div.className = 'spell-level';
-    div.innerHTML = `
-      <div class="lvl-head">
-        <span>Level ${lvl}</span>
-        <div class="slot-inputs">
-          Slots: <input type="number" min="0" class="slot-total" data-lvl="${lvl}" value="0"> /
-          Used: <input type="number" min="0" class="slot-used" data-lvl="${lvl}" value="0">
-        </div>
+    const box = document.createElement('div');
+    box.className = 'slot-box';
+    box.innerHTML = `
+      <div class="slvl">Level ${lvl}</div>
+      <div class="slot-io">
+        <input type="number" min="0" class="slot-total" data-lvl="${lvl}" value="0"> /
+        <input type="number" min="0" class="slot-used" data-lvl="${lvl}" value="0">
       </div>
-      <textarea class="spell-text" data-lvl="${lvl}" placeholder="Spells known / prepared at this level…" style="min-height:50px;"></textarea>
     `;
-    spellLevelsWrap.appendChild(div);
+    slotGrid.appendChild(box);
   }
+
+  /* ---------- Spell table (max 25 rows) ---------- */
+  const MAX_SPELL_ROWS = 25;
+  const spellTableBody = document.getElementById('spellTableBody');
+  const addSpellRowBtn = document.getElementById('addSpellRow');
+
+  function spellLevelOptionsHtml(selected){
+    let opts = '';
+    for(let i=0;i<=9;i++){
+      const label = i===0 ? 'C' : i;
+      opts += `<option value="${i}"${String(i)===String(selected)?' selected':''}>${label}</option>`;
+    }
+    return opts;
+  }
+
+  function addSpellRow(data){
+    data = data || {level:1, name:'', castTime:'', range:'', v:false, s:false, m:false, c:false, r:false, notes:''};
+    if(spellTableBody.children.length >= MAX_SPELL_ROWS) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><select class="spell-level-select">${spellLevelOptionsHtml(data.level)}</select></td>
+      <td><input type="text" class="spell-name" value="${escapeHtml(data.name)}" placeholder="Spell name"></td>
+      <td><input type="text" class="spell-cast" value="${escapeHtml(data.castTime)}" placeholder="1 action"></td>
+      <td><input type="text" class="spell-range" value="${escapeHtml(data.range)}" placeholder="60 ft"></td>
+      <td class="vsm-cell">
+        <label><input type="checkbox" class="spell-v" ${data.v?'checked':''}>V</label>
+        <label><input type="checkbox" class="spell-s" ${data.s?'checked':''}>S</label>
+        <label><input type="checkbox" class="spell-m" ${data.m?'checked':''}>M</label>
+      </td>
+      <td class="cr-cell">
+        <label><input type="checkbox" class="spell-c" ${data.c?'checked':''}>C</label>
+        <label><input type="checkbox" class="spell-r" ${data.r?'checked':''}>R</label>
+      </td>
+      <td><input type="text" class="spell-notes" value="${escapeHtml(data.notes)}" placeholder="Notes"></td>
+      <td><button type="button" class="del-btn" title="Remove">✕</button></td>
+    `;
+    tr.querySelector('.del-btn').addEventListener('click', ()=>{ tr.remove(); updateSpellCountLabel(); scheduleSave(); });
+    spellTableBody.appendChild(tr);
+    updateSpellCountLabel();
+  }
+
+  function updateSpellCountLabel(){
+    const count = spellTableBody.children.length;
+    document.getElementById('spellCountLabel').textContent = `${count} / ${MAX_SPELL_ROWS} spells`;
+    addSpellRowBtn.style.display = count >= MAX_SPELL_ROWS ? 'none' : '';
+  }
+
+  addSpellRowBtn.addEventListener('click', ()=>{ addSpellRow(); scheduleSave(); });
 
   /* ---------- Attacks table ---------- */
   const attacksBody = document.getElementById('attacksBody');
@@ -1141,8 +1225,19 @@
         total: document.querySelector(`.slot-total[data-lvl="${lvl}"]`).value,
         used: document.querySelector(`.slot-used[data-lvl="${lvl}"]`).value
       };
-      state.spellLists[lvl] = document.querySelector(`.spell-text[data-lvl="${lvl}"]`).value;
     }
+    state.spellRows = [...spellTableBody.querySelectorAll('tr')].map(tr=>({
+      level: tr.querySelector('.spell-level-select').value,
+      name: tr.querySelector('.spell-name').value,
+      castTime: tr.querySelector('.spell-cast').value,
+      range: tr.querySelector('.spell-range').value,
+      v: tr.querySelector('.spell-v').checked,
+      s: tr.querySelector('.spell-s').checked,
+      m: tr.querySelector('.spell-m').checked,
+      c: tr.querySelector('.spell-c').checked,
+      r: tr.querySelector('.spell-r').checked,
+      notes: tr.querySelector('.spell-notes').value
+    }));
     ABILITIES.forEach(a=>{
       state.abilities[a.key] = parseInt(document.getElementById('score_'+a.key).value,10) || 10;
       const saveDot = document.querySelector(`.prof-dot[data-kind="save"][data-key="${a.key}"]`);
@@ -1213,8 +1308,10 @@
       const s = (data.spellSlots && data.spellSlots[lvl]) || {total:0,used:0};
       document.querySelector(`.slot-total[data-lvl="${lvl}"]`).value = s.total || 0;
       document.querySelector(`.slot-used[data-lvl="${lvl}"]`).value = s.used || 0;
-      document.querySelector(`.spell-text[data-lvl="${lvl}"]`).value = (data.spellLists && data.spellLists[lvl]) || '';
     }
+    spellTableBody.innerHTML = '';
+    (data.spellRows || []).slice(0, MAX_SPELL_ROWS).forEach(addSpellRow);
+    updateSpellCountLabel();
 
     state.exhaustion = data.exhaustion || 0;
     renderExhaustion();
