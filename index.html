@@ -74,9 +74,9 @@
     display:flex; gap:22px; align-items:flex-start; flex-wrap: wrap;
   }
   .portrait-frame{
-    width: 96px; height: 96px; flex: 0 0 auto;
+    width: 180px; height: 180px; flex: 0 0 auto;
     border: 3px solid var(--oxblood);
-    border-radius: 50%;
+    border-radius: 16px;
     box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--brass), 0 6px 14px var(--shadow);
     background: var(--paper-3);
     display:flex; align-items:center; justify-content:center;
@@ -85,7 +85,7 @@
     position: relative;
   }
   .portrait-frame img{ width:100%; height:100%; object-fit: cover; }
-  .portrait-frame .hint{ font-size: 10px; text-align:center; color: var(--ink-soft); padding: 6px; }
+  .portrait-frame .hint{ font-size: 14px; text-align:center; color: var(--ink-soft); padding: 6px; }
   .portrait-frame input{ display:none; }
 
   .name-block{ flex: 1 1 260px; min-width: 220px; }
@@ -449,7 +449,7 @@
             <option value="Orc">Orc</option>
             <option value="Tiefling">Tiefling</option>
           </select></div>
-          <div class="field" id="subspeciesWrap" style="display:none;"><label>Sub-species</label><select id="f_subspecies"></select></div>
+          <div class="field" id="subspeciesWrap"><label>Sub-species</label><select id="f_subspecies"></select></div>
           <div class="field"><label>Class</label><select id="f_class">
             <option value="">— Select —</option>
             <option value="Artificer">Artificer</option>
@@ -466,7 +466,7 @@
             <option value="Warlock">Warlock</option>
             <option value="Wizard">Wizard</option>
           </select></div>
-          <div class="field" id="subclassWrap" style="display:none;"><label>Subclass</label><select id="f_subclass"></select></div>
+          <div class="field" id="subclassWrap"><label>Subclass</label><select id="f_subclass"></select></div>
           <div class="field"><label>Background</label><select id="f_background">
             <option value="">— Select —</option>
             <option value="Acolyte">Acolyte</option>
@@ -720,18 +720,17 @@
 
   function updateSubspeciesOptions(preserveValue){
     const speciesEl = document.getElementById('f_species');
-    const wrap = document.getElementById('subspeciesWrap');
     const sel = document.getElementById('f_subspecies');
     const species = speciesEl.value;
     const list = SUBSPECIES_MAP[species];
     const keep = preserveValue !== undefined ? preserveValue : sel.value;
     if(list){
-      wrap.style.display = '';
+      sel.disabled = false;
       sel.innerHTML = '<option value="">— Select —</option>' + list.map(s => `<option value="${s}">${s}</option>`).join('');
       if(list.includes(keep)) sel.value = keep;
     } else {
-      wrap.style.display = 'none';
-      sel.innerHTML = '';
+      sel.disabled = true;
+      sel.innerHTML = '<option value="">N/A</option>';
     }
   }
   document.getElementById('f_species').addEventListener('change', ()=> updateSubspeciesOptions());
@@ -752,23 +751,22 @@
     'Wizard': ['Abjurer','Evoker','Diviner','Illusionist']
   };
 
-  function updateSubclassOptions(preserveValue){
+  function updateClassOptions(preserveValue){
     const classEl = document.getElementById('f_class');
-    const wrap = document.getElementById('subclassWrap');
     const sel = document.getElementById('f_subclass');
     const cls = classEl.value;
     const list = CLASS_SUBCLASS_MAP[cls];
     const keep = preserveValue !== undefined ? preserveValue : sel.value;
     if(list){
-      wrap.style.display = '';
+      sel.disabled = false;
       sel.innerHTML = '<option value="">— Select —</option>' + list.map(s => `<option value="${s}">${s}</option>`).join('');
       if(list.includes(keep)) sel.value = keep;
     } else {
-      wrap.style.display = 'none';
-      sel.innerHTML = '';
+      sel.disabled = true;
+      sel.innerHTML = '<option value="">N/A</option>';
     }
   }
-  document.getElementById('f_class').addEventListener('change', ()=> updateSubclassOptions());
+  document.getElementById('f_class').addEventListener('change', ()=> updateClassOptions());
 
   const FIELD_IDS = [
     'f_name','f_species','f_subspecies','f_class','f_subclass','f_background','f_alignment','f_player',
@@ -1171,7 +1169,7 @@
     });
     updateSubspeciesOptions(data.fields && data.fields.f_subspecies);
     lastConfirmedLevel = document.getElementById('f_level').value;
-    updateSubclassOptions(data.fields && data.fields.f_subclass);
+    updateClassOptions(data.fields && data.fields.f_subclass);
     ABILITIES.forEach(a=>{
       document.getElementById('score_'+a.key).value = (data.abilities && data.abilities[a.key]) || 10;
       const saveDot = document.querySelector(`.prof-dot[data-kind="save"][data-key="${a.key}"]`);
