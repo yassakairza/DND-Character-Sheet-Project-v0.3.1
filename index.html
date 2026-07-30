@@ -309,11 +309,37 @@
   textarea.tall{ min-height: 130px; }
   textarea.epic{ min-height: 220px; }
 
-  .slot-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(90px,1fr)); gap:8px; margin-bottom:6px; }
-  .slot-box{ text-align:center; border:1px solid var(--line); border-radius:8px; padding:8px 6px; background: rgba(255,255,255,0.25); }
-  .slot-box .slvl{ font-family:'Spectral SC',serif; font-size:10px; letter-spacing:.06em; color: var(--ink-soft); margin-bottom:4px; }
-  .slot-box .slot-io{ display:flex; align-items:center; justify-content:center; gap:3px; font-size:11px; color: var(--ink-soft); }
-  .slot-box input{ width:32px; text-align:center; border:1px solid var(--line); border-radius:4px; padding:2px; font-size:12px; background: var(--paper); color: var(--ink); }
+  .spell-slots-card{
+    border:2px solid var(--ink); border-radius:12px; padding:16px 20px;
+    background: rgba(255,255,255,0.25); margin-bottom:6px;
+  }
+  .ss-card-title{
+    text-align:center; font-family:'Cinzel',serif; font-size:14px; letter-spacing:.1em;
+    color: var(--oxblood-dark); border-bottom:1px solid var(--line); padding-bottom:10px; margin-bottom:10px;
+  }
+  .ss-columns{ display:grid; grid-template-columns: repeat(3, 1fr); gap:0; }
+  .ss-col{ padding:0 14px; border-left:1px solid var(--line); }
+  .ss-col:first-child{ border-left:none; padding-left:0; }
+  .ss-col-head{ display:flex; justify-content:flex-end; gap:14px; font-family:'Spectral SC',serif; font-size:9.5px; color: var(--ink-soft); margin-bottom:6px; }
+  .ss-col-head span{ width:56px; text-align:center; }
+  .ss-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .ss-level{ font-family:'Spectral SC',serif; font-size:11px; color: var(--ink); white-space:nowrap; flex:0 0 auto; }
+  .ss-total{
+    width:30px; border:none; border-bottom:1px solid var(--ink-soft); background:transparent;
+    text-align:center; font-family:'Spectral',serif; font-size:13px; color: var(--oxblood-dark);
+  }
+  .ss-total:focus{ outline:none; border-bottom-color: var(--oxblood); }
+  .ss-pips{ display:flex; gap:3px; flex-wrap:wrap; width:56px; }
+  .ss-pip{
+    width:13px; height:13px; border:1.5px solid var(--ink-soft); background:transparent;
+    transform: rotate(45deg); cursor:pointer; padding:0; flex:0 0 auto;
+  }
+  .ss-pip.used{ background: var(--oxblood-dark); border-color: var(--oxblood-dark); }
+  @media (max-width: 640px){
+    .ss-columns{ grid-template-columns: 1fr; }
+    .ss-col{ border-left:none; padding-left:0; border-top:1px solid var(--line); padding-top:10px; margin-top:10px; }
+    .ss-col:first-child{ border-top:none; margin-top:0; padding-top:0; }
+  }
 
   table.spell-table{ width:100%; border-collapse:collapse; font-size:12.5px; min-width:820px; }
   table.spell-table th{
@@ -633,8 +659,10 @@
       <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Cantrips</h2></div>
       <textarea id="f_cantrips" placeholder="Cantrips known…"></textarea>
 
-      <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Spell Slots</h2></div>
-      <div class="slot-grid" id="slotGrid"></div>
+      <div class="spell-slots-card">
+        <div class="ss-card-title">Spell Slots</div>
+        <div class="ss-columns" id="slotGrid"></div>
+      </div>
 
       <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Spells</h2></div>
       <div style="overflow-x:auto;">
@@ -917,19 +945,50 @@
     document.getElementById('exhaustionPenalty').textContent = (state.exhaustion>0? '−'+(state.exhaustion*2) : '0');
   }
 
-  /* ---------- Spell Slots (compact grid) ---------- */
+  /* ---------- Spell Slots (3-column card with Total blank + Expended pips) ---------- */
+  const MAX_SLOTS_PER_LEVEL = {1:4, 2:3, 3:3, 4:3, 5:3, 6:2, 7:2, 8:1, 9:1};
   const slotGrid = document.getElementById('slotGrid');
-  for(let lvl=1; lvl<=9; lvl++){
-    const box = document.createElement('div');
-    box.className = 'slot-box';
-    box.innerHTML = `
-      <div class="slvl">Level ${lvl}</div>
-      <div class="slot-io">
-        <input type="number" min="0" class="slot-total" data-lvl="${lvl}" value="0"> /
-        <input type="number" min="0" class="slot-used" data-lvl="${lvl}" value="0">
-      </div>
-    `;
-    slotGrid.appendChild(box);
+  const slotLevelGroups = [[1,2,3],[4,5,6],[7,8,9]];
+
+  function pipsHtml(lvl){
+    const max = MAX_SLOTS_PER_LEVEL[lvl];
+    let html = '';
+    for(let i=0;i<max;i++){
+      html += `<button type="button" class="ss-pip" data-lvl="${lvl}" data-idx="${i}"></button>`;
+    }
+    return html;
+  }
+
+  slotLevelGroups.forEach(group=>{
+    const col = document.createElement('div');
+    col.className = 'ss-col';
+    let rowsHtml = '<div class="ss-col-head"><span></span><span>Total</span><span>Expended</span></div>';
+    group.forEach(lvl=>{
+      rowsHtml += `
+        <div class="ss-row">
+          <span class="ss-level">Level ${lvl}</span>
+          <input type="text" inputmode="numeric" class="ss-total" data-lvl="${lvl}" maxlength="2">
+          <div class="ss-pips" data-lvl="${lvl}">${pipsHtml(lvl)}</div>
+        </div>`;
+    });
+    col.innerHTML = rowsHtml;
+    slotGrid.appendChild(col);
+  });
+
+  document.querySelectorAll('.ss-pip').forEach(pip=>{
+    pip.addEventListener('click', ()=>{
+      pip.classList.toggle('used');
+      scheduleSave();
+    });
+  });
+
+  function getUsedCount(lvl){
+    return document.querySelectorAll(`.ss-pip[data-lvl="${lvl}"].used`).length;
+  }
+  function setUsedCount(lvl, count){
+    document.querySelectorAll(`.ss-pip[data-lvl="${lvl}"]`).forEach((pip, i)=>{
+      pip.classList.toggle('used', i < count);
+    });
   }
 
   /* ---------- Spell table (max 25 rows) ---------- */
@@ -1222,8 +1281,8 @@
     state.featsList = featsAdder.readAll();
     for(let lvl=1; lvl<=9; lvl++){
       state.spellSlots[lvl] = {
-        total: document.querySelector(`.slot-total[data-lvl="${lvl}"]`).value,
-        used: document.querySelector(`.slot-used[data-lvl="${lvl}"]`).value
+        total: document.querySelector(`.ss-total[data-lvl="${lvl}"]`).value,
+        used: getUsedCount(lvl)
       };
     }
     state.spellRows = [...spellTableBody.querySelectorAll('tr')].map(tr=>({
@@ -1306,8 +1365,8 @@
 
     for(let lvl=1; lvl<=9; lvl++){
       const s = (data.spellSlots && data.spellSlots[lvl]) || {total:0,used:0};
-      document.querySelector(`.slot-total[data-lvl="${lvl}"]`).value = s.total || 0;
-      document.querySelector(`.slot-used[data-lvl="${lvl}"]`).value = s.used || 0;
+      document.querySelector(`.ss-total[data-lvl="${lvl}"]`).value = s.total || '';
+      setUsedCount(lvl, parseInt(s.used, 10) || 0);
     }
     spellTableBody.innerHTML = '';
     (data.spellRows || []).slice(0, MAX_SPELL_ROWS).forEach(addSpellRow);
