@@ -320,8 +320,6 @@
   .ss-columns{ display:grid; grid-template-columns: repeat(3, 1fr); gap:0; }
   .ss-col{ padding:0 14px; border-left:1px solid var(--line); }
   .ss-col:first-child{ border-left:none; padding-left:0; }
-  .ss-col-head{ display:flex; justify-content:flex-end; gap:14px; font-family:'Spectral SC',serif; font-size:9.5px; color: var(--ink-soft); margin-bottom:6px; }
-  .ss-col-head span{ width:56px; text-align:center; }
   .ss-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
   .ss-level{ font-family:'Spectral SC',serif; font-size:11px; color: var(--ink); white-space:nowrap; flex:0 0 auto; }
   .ss-total{
@@ -962,7 +960,7 @@
   slotLevelGroups.forEach(group=>{
     const col = document.createElement('div');
     col.className = 'ss-col';
-    let rowsHtml = '<div class="ss-col-head"><span></span><span>Total</span><span>Expended</span></div>';
+    let rowsHtml = '';
     group.forEach(lvl=>{
       rowsHtml += `
         <div class="ss-row">
