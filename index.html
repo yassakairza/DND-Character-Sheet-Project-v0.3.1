@@ -331,11 +331,6 @@
   .ss-col:first-child{ border-left:none; padding-left:0; }
   .ss-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
   .ss-level{ font-family:'Spectral SC',serif; font-size:11px; color: var(--ink); white-space:nowrap; flex:0 0 auto; }
-  .ss-total{
-    width:30px; border:none; border-bottom:1px solid var(--ink-soft); background:transparent;
-    text-align:center; font-family:'Spectral',serif; font-size:13px; color: var(--oxblood-dark);
-  }
-  .ss-total:focus{ outline:none; border-bottom-color: var(--oxblood); }
   .ss-pips{ display:flex; gap:3px; flex-wrap:wrap; width:56px; }
   .ss-pip{
     width:13px; height:13px; border:1.5px solid var(--ink-soft); background:transparent;
@@ -663,8 +658,6 @@
         <div class="stat-box"><div class="label">Spell Attack Bonus</div><input id="calc_spellatk" readonly></div>
       </div>
 
-      <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Cantrips</h2></div>
-      <textarea id="f_cantrips" placeholder="Cantrips known…"></textarea>
 
       <div class="spell-slots-card">
         <div class="ss-card-title">Spell Slots</div>
@@ -782,7 +775,7 @@
     fields: {}
   };
   SKILLS.forEach(s => { state.skillProf[s.name] = 0; state.skillAdv[s.name] = ''; });
-  for(let i=1;i<=9;i++){ state.spellSlots[i] = {total:0, used:0}; }
+  for(let i=1;i<=9;i++){ state.spellSlots[i] = {used:0}; }
 
   const SUBSPECIES_MAP = {
     'Dragonborn': ['Black','Blue','Brass','Bronze','Copper','Gold','Green','Red','Silver','White'],
@@ -845,7 +838,7 @@
   const FIELD_IDS = [
     'f_name','f_species','f_subspecies','f_class','f_subclass','f_background','f_alignment','f_player',
     'f_level','f_xp','f_ac','f_speed','f_hpmax','f_hpcur','f_hptemp','f_hitdice_max','f_hitdice_cur',
-    'f_proficiencies','f_spell_ability','f_cantrips',
+    'f_proficiencies','f_spell_ability',
     'f_traits','f_ideals','f_bonds','f_flaws','ap_age','ap_height','ap_eyes','ap_hair',
     'f_backstory','f_allies','f_notes','c_cp','c_sp','c_ep','c_gp','c_pp'
   ];
@@ -986,7 +979,6 @@
       rowsHtml += `
         <div class="ss-row">
           <span class="ss-level">Level ${lvl}</span>
-          <input type="text" inputmode="numeric" class="ss-total" data-lvl="${lvl}" maxlength="2">
           <div class="ss-pips" data-lvl="${lvl}">${pipsHtml(lvl)}</div>
         </div>`;
     });
@@ -1300,7 +1292,6 @@
     state.featsList = featsAdder.readAll();
     for(let lvl=1; lvl<=9; lvl++){
       state.spellSlots[lvl] = {
-        total: document.querySelector(`.ss-total[data-lvl="${lvl}"]`).value,
         used: getUsedCount(lvl)
       };
     }
@@ -1383,8 +1374,7 @@
     if(!data.featsList || !data.featsList.length) featsAdder.addEntry();
 
     for(let lvl=1; lvl<=9; lvl++){
-      const s = (data.spellSlots && data.spellSlots[lvl]) || {total:0,used:0};
-      document.querySelector(`.ss-total[data-lvl="${lvl}"]`).value = s.total || '';
+      const s = (data.spellSlots && data.spellSlots[lvl]) || {used:0};
       setUsedCount(lvl, parseInt(s.used, 10) || 0);
     }
     spellTableBody.innerHTML = '';
