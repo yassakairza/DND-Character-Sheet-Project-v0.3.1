@@ -14,8 +14,6 @@
 <meta name="apple-mobile-web-app-title" content="Char Ledger">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Spectral+SC:wght@500;600&display=swap" rel="stylesheet">
-<!-- Vercel Web Analytics -->
-<script defer src="https://cdn.vercel-insights.com/v1/script.js"></script>
 <style>
   :root{
     --paper: #ece1c8;
@@ -805,19 +803,19 @@
   document.getElementById('f_species').addEventListener('change', ()=> updateSubspeciesOptions());
 
   const CLASS_SUBCLASS_MAP = {
-    'Artificer': ['Alchemist','Armorer','Artillerist','Battle Smith','Cartographer'],
-    'Barbarian': ['Path of Berserker','Path of Wild Heart','Path of World Tree','Path of Zealot'],
-    'Bard': ['College of Dance','College of Glamour','College of Lore','College of Valor'],
-    'Cleric': ['Life Domain','Light Domain','Trickery Domain','War Domain'],
-    'Druid': ['Circle of The Land','Circle of The Sea','Circle of The Moon','Circle of The Stars'],
-    'Fighter': ['Battle Master','Champion','Eldritch Knight','Psi Warrior'],
-    'Monk': ['Warrior of The Elements','Warrior of Mercy','Warrior of The Open Hand','Warrior of Shadow'],
-    'Paladin': ['Oath of Glory','Oath of Vengeance','Oath of Devotion','Oath of Ancients'],
-    'Ranger': ['Beast Master','Gloom Stalker','Hunter','Fey Wanderer'],
-    'Rogue': ['Arcane Trickster','Soulknife','Assassin','Thief'],
-    'Sorcerer': ['Aberrant Sorcery','Clockwork Sorcery','Draconic Sorcery','Wild Magic Sorcery'],
-    'Warlock': ['Archfey Patron','Celestial Patron','Fiend Patron','Great Old One Patron'],
-    'Wizard': ['Abjurer','Evoker','Diviner','Illusionist']
+    'Artificer': ['Alchemist','Armorer','Artillerist','Battle Smith','Cartographer','Reanimator'],
+    'Barbarian': ['Ancestral Guardian','Battlerager','Beast','Berserker','Fractured','Giant','Primal Spirit','Storm Herald','Wild Heart','Wild Magic','World Tree','Wrathful Dead','Zealot'],
+    'Bard': ['Adventurers','Creation','Dance','Eloquence','Fools','Glamour','Lore','Moon','Requiems','Spirits','Swords','Valor','Whispers'],
+    'Cleric': ['Ambition','Arcana','Death','Eldritch','Forge','Grave','Inquisition','Knowledge','Life','Light','Nature','Order','Peace','Purification','Solidarity','Strength','Tempest','Trickery','Twilight','War','Zeal'],
+    'Druid': ['Blood','Dreams','Entropy','Land','Moon','Mutation','Sea','Shepherd','Spores','Stars','Wildfire'],
+    'Fighter': ['Arcane Archer','Banneret','Battle Master','Bulwark Warrior','Cavalier','Champion','Echo Knight','Eldritch Knight','Living Crucible','Nightwatcher','Psi Warrior','Rune Knight','Samurai'],
+    'Monk': ['Ascendant Dragon','Astral Self','Drunken Master','Elements','Kensei','Leaden Crown','Long Death','Mercy','Open Hand','Pride','Regret','Shadow','Sun Soul'],
+    'Paladin': ['Ancients','Conquest','Crown','Devotion','Glory','Noble Genies','Oathbreaker','Pestilence','Redemption','Slaughter','Vengeance','Watchers','Zeal'],
+    'Ranger': ['Beast Master','Drakewarden','Fey Wanderer','Gloom Stalker','Green Reaper','Hollow Warden','Horizon Walker','Hunter','Monster Slayer','Primordial Archer','Swarmkeeper','Vermin Lord','Winter Walker'],
+    'Rogue': ['Arcane Trickster','Assassin','Highway Rider','Inquisitive','Mastermind','Misfortune Bringer','Phantom','Sanguine Thief','Scion of the Three','Scout','Soulknife','Swashbuckler','Thief'],
+    'Sorcerer': ['Aberrant','Apocalypse','Clockwork','Divine Soul','Draconic','Haunted','Lunar','Pyromancer','Shadow','Spellfire','Storm','Wild Magic','Wretched'],
+    'Warlock': ['Archfey','Celestial','Coven','Fathomless','Fiend','First Vampire','Genie','Great Old One','Hexblade','Parasite','Undead','Undying'],
+    'Wizard': ['Abjurer','Bladesinger','Chronurgy','Conjuration','Daemonologist','Diviner','Enchantment','Evoker','Graviturgy','Illusionist','Necromancy','Plague Doctor','Sangromancer','Scribes','Transmutation','War'],
   };
 
   function updateClassOptions(preserveValue){
