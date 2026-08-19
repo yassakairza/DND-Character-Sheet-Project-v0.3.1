@@ -303,6 +303,12 @@
   }
   .entry-card .entry-desc:focus{ outline:none; }
   .row-btn{ background:none; border:1px dashed var(--line); color:var(--ink-soft); border-radius:4px; font-size:12px; padding:5px 10px; cursor:pointer; margin-top:8px; }
+  .rest-btn{
+    flex:1; font-family:'Spectral SC',serif; font-size:12px; letter-spacing:.04em;
+    padding:9px 14px; border-radius:20px; cursor:pointer;
+    border:1px solid var(--oxblood); background: var(--paper); color: var(--oxblood-dark);
+  }
+  .rest-btn:hover{ background: var(--oxblood); color: var(--paper); }
   .row-btn:hover{ border-color: var(--oxblood); color: var(--oxblood-dark); }
   .del-btn{ background:none; border:none; color: var(--oxblood); cursor:pointer; font-size:15px; }
 
@@ -593,6 +599,10 @@
       <div class="grid two" style="margin-top:10px;">
         <div class="field"><label>Hit Dice (e.g. 3d8)</label><input id="f_hitdice_max" placeholder="3d8"></div>
         <div class="field"><label>Hit Dice Remaining</label><input id="f_hitdice_cur"></div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button type="button" id="shortRestBtn" class="rest-btn">🌙 Short Rest</button>
+        <button type="button" id="longRestBtn" class="rest-btn">☀️ Long Rest</button>
       </div>
 
       <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Death Saves</h2></div>
@@ -1636,6 +1646,78 @@
   });
 
   document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+  /* ---------- Short Rest & Long Rest ---------- */
+  function rollOneDie(sides){
+    return 1 + Math.floor(Math.random() * sides);
+  }
+  function parseHitDiceMax(){
+    const str = document.getElementById('f_hitdice_max').value || '';
+    const match = str.match(/(\d+)?\s*d\s*(\d+)/i);
+    return {
+      count: match && match[1] ? parseInt(match[1], 10) : 0,
+      sides: match ? parseInt(match[2], 10) : 8
+    };
+  }
+
+  function shortRest(){
+    const remaining = parseInt(document.getElementById('f_hitdice_cur').value, 10) || 0;
+    if(remaining <= 0){
+      alert('No Hit Dice remaining to spend on a Short Rest.');
+      return;
+    }
+    const input = prompt(`Short Rest — spend how many Hit Dice? (0–${remaining})`, '1');
+    if(input === null) return;
+    const numDice = Math.max(0, Math.min(remaining, parseInt(input, 10) || 0));
+    if(numDice === 0) return;
+
+    const { sides } = parseHitDiceMax();
+    const conMod = mod(state.abilities.con);
+    const rolls = [];
+    for(let i=0;i<numDice;i++) rolls.push(rollOneDie(sides));
+    const healed = Math.max(0, rolls.reduce((a,b)=>a+b,0) + conMod * numDice);
+
+    const maxHp = parseInt(document.getElementById('f_hpmax').value, 10) || 0;
+    const curHp = parseInt(document.getElementById('f_hpcur').value, 10) || 0;
+    const newHp = maxHp ? Math.min(maxHp, curHp + healed) : curHp + healed;
+    document.getElementById('f_hpcur').value = newHp;
+    document.getElementById('f_hitdice_cur').value = remaining - numDice;
+
+    recalc();
+    scheduleSave();
+    alert(`Short Rest: rolled d${sides} ×${numDice} (${rolls.join('+')}) ${conMod>=0?'+':''}${conMod*numDice} CON = healed ${healed}. HP now ${newHp}${maxHp?'/'+maxHp:''}.`);
+  }
+
+  function longRest(){
+    const proceed = confirm('Take a Long Rest? This restores HP to max, all spell slots, half your Hit Dice, reduces exhaustion by 1, and clears death saves.');
+    if(!proceed) return;
+
+    const maxHp = document.getElementById('f_hpmax').value;
+    if(maxHp) document.getElementById('f_hpcur').value = maxHp;
+
+    document.querySelectorAll('.ss-pip.used').forEach(p => p.classList.remove('used'));
+
+    const { count: totalDice } = parseHitDiceMax();
+    if(totalDice > 0){
+      const regain = Math.max(1, Math.ceil(totalDice / 2));
+      const curRemaining = parseInt(document.getElementById('f_hitdice_cur').value, 10) || 0;
+      document.getElementById('f_hitdice_cur').value = Math.min(totalDice, curRemaining + regain);
+    }
+
+    if(state.exhaustion > 0){
+      state.exhaustion -= 1;
+      renderExhaustion();
+    }
+
+    document.querySelectorAll('.death-s, .death-f').forEach(cb => cb.checked = false);
+
+    recalc();
+    scheduleSave();
+    alert('Long Rest complete — HP restored, spell slots restored, Hit Dice partially regained, exhaustion reduced, death saves cleared.');
+  }
+
+  document.getElementById('shortRestBtn').addEventListener('click', shortRest);
+  document.getElementById('longRestBtn').addEventListener('click', longRest);
 
   document.getElementById('resetBtn').addEventListener('click', ()=>{
     if(!confirm('Clear the entire sheet? This cannot be undone.')) return;
