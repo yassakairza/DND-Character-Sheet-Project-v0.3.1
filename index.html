@@ -309,6 +309,37 @@
     border:1px solid var(--oxblood); background: var(--paper); color: var(--oxblood-dark);
   }
   .rest-btn:hover{ background: var(--oxblood); color: var(--paper); }
+
+  table.resource-table{ width:100%; border-collapse:collapse; font-size:12.5px; min-width:460px; }
+  table.resource-table th{
+    font-family:'Spectral SC',serif; font-size:10px; letter-spacing:.05em; text-align:left;
+    color: var(--ink-soft); border-bottom:1px solid var(--line); padding:6px 5px; white-space:nowrap;
+  }
+  table.resource-table td{ border-bottom:1px solid rgba(185,166,124,0.35); padding:5px; vertical-align:middle; }
+  table.resource-table input[type="text"].resource-name{
+    width:100%; border:none; background:transparent; font-family:'Spectral',serif; font-size:12.5px; color: var(--ink);
+  }
+  table.resource-table input[type="text"].resource-name:focus{ outline:none; background: rgba(255,255,255,0.5); }
+  .resource-current-cell{ display:flex; align-items:center; gap:5px; white-space:nowrap; }
+  .resource-step-btn{
+    width:18px; height:18px; border-radius:50%; flex:0 0 auto;
+    border:1px solid var(--line); background: rgba(255,255,255,0.4); color: var(--oxblood-dark);
+    font-size:12px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .resource-step-btn:hover{ background: var(--oxblood); border-color: var(--oxblood); color: var(--paper); }
+  .resource-current{
+    width:26px; text-align:center; border:1px solid var(--line); border-radius:4px; padding:2px;
+    font-family:'Spectral',serif; font-size:12.5px; background: var(--paper); color: var(--ink);
+  }
+  .resource-max{
+    width:40px; text-align:center; border:1px solid var(--line); border-radius:4px; padding:2px;
+    font-family:'Spectral',serif; font-size:12.5px; background: var(--paper); color: var(--ink);
+  }
+  select.resource-reset{
+    width:100%; font-size:11px; border:1px solid var(--line); border-radius:4px; padding:3px;
+    background: rgba(255,255,255,0.4); color: var(--ink);
+  }
+  select.resource-reset option{ color: var(--ink); background: var(--paper); }
   .row-btn:hover{ border-color: var(--oxblood); color: var(--oxblood-dark); }
   .del-btn{ background:none; border:none; color: var(--oxblood); cursor:pointer; font-size:15px; }
 
@@ -604,6 +635,23 @@
         <button type="button" id="shortRestBtn" class="rest-btn">🌙 Short Rest</button>
         <button type="button" id="longRestBtn" class="rest-btn">☀️ Long Rest</button>
       </div>
+
+      <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Class Resources</h2></div>
+      <div style="overflow-x:auto;">
+        <table class="resource-table">
+          <thead>
+            <tr>
+              <th style="min-width:140px;">Name</th>
+              <th style="width:110px;">Current</th>
+              <th style="width:60px;">Max</th>
+              <th style="width:110px;">Resets On</th>
+              <th style="width:26px;"></th>
+            </tr>
+          </thead>
+          <tbody id="resourceBody"></tbody>
+        </table>
+      </div>
+      <button class="row-btn" id="addResourceRow">+ Add resource</button>
 
       <div class="section-title"><div class="diamond"></div><h2 style="margin:0;font-size:15px;">Death Saves</h2></div>
       <div class="grid two">
@@ -1093,6 +1141,59 @@
   }
   document.getElementById('addGear').addEventListener('click', ()=>{ addGearRow(); scheduleSave(); });
 
+  /* ---------- Class Resources table ---------- */
+  const resourceBody = document.getElementById('resourceBody');
+  function addResourceRow(data){
+    data = data || {name:'', current:0, max:0, resetOn:'long'};
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" class="resource-name" value="${escapeHtml(data.name)}" placeholder="e.g. Rage, Ki Points"></td>
+      <td>
+        <div class="resource-current-cell">
+          <button type="button" class="resource-step-btn" data-dir="-1">−</button>
+          <input type="text" inputmode="numeric" class="resource-current" value="${escapeHtml(String(data.current))}">
+          <button type="button" class="resource-step-btn" data-dir="1">+</button>
+        </div>
+      </td>
+      <td><input type="text" inputmode="numeric" class="resource-max" value="${escapeHtml(String(data.max))}"></td>
+      <td>
+        <select class="resource-reset">
+          <option value="short">Short Rest</option>
+          <option value="long">Long Rest</option>
+          <option value="both">Both</option>
+          <option value="manual">Manual</option>
+        </select>
+      </td>
+      <td><button type="button" class="del-btn" title="Remove">✕</button></td>
+    `;
+    tr.querySelector('.resource-reset').value = data.resetOn || 'long';
+    tr.querySelector('.del-btn').addEventListener('click', ()=>{ tr.remove(); scheduleSave(); });
+    tr.querySelectorAll('.resource-step-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const curInput = tr.querySelector('.resource-current');
+        const maxInput = tr.querySelector('.resource-max');
+        const max = parseInt(maxInput.value, 10);
+        let val = parseInt(curInput.value, 10) || 0;
+        val += parseInt(btn.dataset.dir, 10);
+        val = Math.max(0, isNaN(max) ? val : Math.min(max, val));
+        curInput.value = val;
+        scheduleSave();
+      });
+    });
+    resourceBody.appendChild(tr);
+  }
+  document.getElementById('addResourceRow').addEventListener('click', ()=>{ addResourceRow(); scheduleSave(); });
+
+  function resetResourcesOn(kind){
+    resourceBody.querySelectorAll('tr').forEach(tr=>{
+      const resetOn = tr.querySelector('.resource-reset').value;
+      if(resetOn === kind || resetOn === 'both'){
+        const max = tr.querySelector('.resource-max').value;
+        tr.querySelector('.resource-current').value = max || 0;
+      }
+    });
+  }
+
   function escapeHtml(str){
     return String(str||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
@@ -1296,6 +1397,12 @@
       qty: tr.querySelector('.gear-qty').value,
       notes: tr.querySelector('.gear-notes').value
     }));
+    state.resources = [...resourceBody.querySelectorAll('tr')].map(tr=>({
+      name: tr.querySelector('.resource-name').value,
+      current: tr.querySelector('.resource-current').value,
+      max: tr.querySelector('.resource-max').value,
+      resetOn: tr.querySelector('.resource-reset').value
+    }));
     state.attune = [...document.querySelectorAll('.attune')].map(i=>i.value);
     state.traits = traitsAdder.readAll();
     state.classFeaturesList = classFeaturesAdder.readAll();
@@ -1368,6 +1475,9 @@
     gearBody.innerHTML = '';
     (data.gear && data.gear.length ? data.gear : []).forEach(addGearRow);
     if(!data.gear || !data.gear.length) addGearRow();
+
+    resourceBody.innerHTML = '';
+    (data.resources && data.resources.length ? data.resources : []).forEach(addResourceRow);
 
     if(data.attune) document.querySelectorAll('.attune').forEach((i,idx)=> i.value = data.attune[idx]||'');
 
@@ -1683,13 +1793,15 @@
     document.getElementById('f_hpcur').value = newHp;
     document.getElementById('f_hitdice_cur').value = remaining - numDice;
 
+    resetResourcesOn('short');
+
     recalc();
     scheduleSave();
-    alert(`Short Rest: rolled d${sides} ×${numDice} (${rolls.join('+')}) ${conMod>=0?'+':''}${conMod*numDice} CON = healed ${healed}. HP now ${newHp}${maxHp?'/'+maxHp:''}.`);
+    alert(`Short Rest: rolled d${sides} ×${numDice} (${rolls.join('+')}) ${conMod>=0?'+':''}${conMod*numDice} CON = healed ${healed}. HP now ${newHp}${maxHp?'/'+maxHp:''}. Short-rest resources restored.`);
   }
 
   function longRest(){
-    const proceed = confirm('Take a Long Rest? This restores HP to max, all spell slots, half your Hit Dice, reduces exhaustion by 1, and clears death saves.');
+    const proceed = confirm('Take a Long Rest? This restores HP to max, all spell slots, half your Hit Dice, reduces exhaustion by 1, clears death saves, and restores long-rest resources.');
     if(!proceed) return;
 
     const maxHp = document.getElementById('f_hpmax').value;
@@ -1711,9 +1823,11 @@
 
     document.querySelectorAll('.death-s, .death-f').forEach(cb => cb.checked = false);
 
+    resetResourcesOn('long');
+
     recalc();
     scheduleSave();
-    alert('Long Rest complete — HP restored, spell slots restored, Hit Dice partially regained, exhaustion reduced, death saves cleared.');
+    alert('Long Rest complete — HP restored, spell slots restored, Hit Dice partially regained, exhaustion reduced, death saves cleared, long-rest resources restored.');
   }
 
   document.getElementById('shortRestBtn').addEventListener('click', shortRest);
