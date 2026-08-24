@@ -1202,7 +1202,7 @@
   function makeEntryAdder(containerId, sourcePlaceholder, namePlaceholder){
     const container = document.getElementById(containerId);
     function addEntry(data){
-      data = data || {name:'', source:'', desc:''};
+      data = data || {name:'', source:'', desc:'', height:''};
       const card = document.createElement('div');
       card.className = 'entry-card';
       card.innerHTML = `
@@ -1213,6 +1213,10 @@
         </div>
         <textarea class="entry-desc" placeholder="What it does…">${escapeHtml(data.desc)}</textarea>
       `;
+      const desc = card.querySelector('.entry-desc');
+      if(data.height) desc.style.height = data.height;
+      desc.addEventListener('mouseup', ()=>{ scheduleSave(); });
+      desc.addEventListener('touchend', ()=>{ scheduleSave(); });
       card.querySelector('.del-btn').addEventListener('click', ()=>{ card.remove(); scheduleSave(); });
       container.appendChild(card);
     }
@@ -1220,7 +1224,8 @@
       return [...container.querySelectorAll('.entry-card')].map(card=>({
         name: card.querySelector('.entry-name').value,
         source: card.querySelector('.entry-source').value,
-        desc: card.querySelector('.entry-desc').value
+        desc: card.querySelector('.entry-desc').value,
+        height: card.querySelector('.entry-desc').style.height || ''
       }));
     }
     function clear(){ container.innerHTML = ''; }
