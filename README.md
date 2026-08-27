@@ -20,6 +20,7 @@ A fillable, digital D&D 5e (2024 Player's Handbook rules) character sheet that r
 - **Print support** — each tab prints as its own page, with the community logo watermarked faintly in the background
 - Installable as a **Progressive Web App**: works offline, gets a home-screen icon, and opens full-screen on mobile
 - **Shareable links** — save your character to the cloud and get a private edit link plus a read-only view link to send your DM or party (see `backend/README.md` for setup)
+- **Optional accounts** — sign up with email + password to get a "My Characters" list, so you don't have to keep track of edit links yourself. Sharing still works the same with or without an account.
 
 ## Files
 
