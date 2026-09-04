@@ -513,6 +513,7 @@
 <div class="toolbar">
   <button class="primary" id="saveBtn">⚜ Seal &amp; Save</button>
   <button class="primary" id="shareBtn" style="background:var(--forest);border-color:var(--forest);">🔗 Save &amp; Share</button>
+  <button id="newCharBtn">✨ New Character</button>
   <button id="exportBtn">Export JSON</button>
   <label class="file-btn">Import JSON<input type="file" id="importInput" accept="application/json"></label>
   <button id="printBtn">Print sheet</button>
@@ -585,6 +586,7 @@
     <div class="hero-top">
       <div class="portrait-frame" id="portraitFrame" title="Click to add a portrait">
         <span class="hint" id="portraitHint">Add<br>portrait</span>
+        <img id="portraitImg" alt="Character portrait" style="display:none;">
         <input type="file" id="portraitInput" accept="image/*">
       </div>
       <div class="name-block">
@@ -1395,6 +1397,8 @@
   /* ---------- Portrait ---------- */
   const portraitFrame = document.getElementById('portraitFrame');
   const portraitInput = document.getElementById('portraitInput');
+  const portraitImg = document.getElementById('portraitImg');
+  const portraitHint = document.getElementById('portraitHint');
   portraitFrame.addEventListener('click', ()=> portraitInput.click());
   portraitInput.addEventListener('change', ()=>{
     const file = portraitInput.files[0]; if(!file) return;
@@ -1404,8 +1408,13 @@
   });
   function renderPortrait(){
     if(state.portrait){
-      portraitFrame.innerHTML = `<img src="${state.portrait}" alt="Character portrait"><input type="file" id="portraitInput2" accept="image/*" style="display:none;">`;
-      portraitFrame.querySelector('img').addEventListener('click', e=>{ e.stopPropagation(); portraitInput.click(); });
+      portraitImg.src = state.portrait;
+      portraitImg.style.display = '';
+      portraitHint.style.display = 'none';
+    } else {
+      portraitImg.style.display = 'none';
+      portraitImg.src = '';
+      portraitHint.style.display = '';
     }
   }
 
@@ -1522,7 +1531,7 @@
     Object.assign(state, data);
     FIELD_IDS.forEach(id=>{
       const el = document.getElementById(id);
-      if(el && data.fields && data.fields[id] !== undefined) el.value = data.fields[id];
+      if(el) el.value = (data.fields && data.fields[id] !== undefined) ? data.fields[id] : '';
     });
     updateSubspeciesOptions(data.fields && data.fields.f_subspecies);
     lastConfirmedLevel = document.getElementById('f_level').value;
@@ -1541,8 +1550,8 @@
       if(advBtn) setAdvButton(advBtn, (data.skillAdv && data.skillAdv[s.name]) || '');
     });
     document.querySelectorAll('.insp-dot').forEach((cb,i)=>{ cb.checked = i < (data.inspiration||0); });
-    if(data.deathSuccess) document.querySelectorAll('.death-s').forEach((c,i)=> c.checked = !!data.deathSuccess[i]);
-    if(data.deathFail) document.querySelectorAll('.death-f').forEach((c,i)=> c.checked = !!data.deathFail[i]);
+    document.querySelectorAll('.death-s').forEach((c,i)=> c.checked = !!(data.deathSuccess && data.deathSuccess[i]));
+    document.querySelectorAll('.death-f').forEach((c,i)=> c.checked = !!(data.deathFail && data.deathFail[i]));
 
     attacksBody.innerHTML = '';
     (data.attacks && data.attacks.length ? data.attacks : []).forEach(addAttackRow);
@@ -1579,7 +1588,8 @@
 
     state.exhaustion = data.exhaustion || 0;
     renderExhaustion();
-    if(data.portrait){ state.portrait = data.portrait; renderPortrait(); }
+    state.portrait = data.portrait || null;
+    renderPortrait();
 
     applyTheme(data.theme || 'oxblood', data.customColor);
     if(data.theme === 'custom' && data.customColor){
@@ -1618,7 +1628,7 @@
   /* ---------- Cloud sync (shared links via backend API) ---------- */
   // After you deploy the backend (see README), replace this with your real API URL,
   // e.g. "https://your-app-name.onrender.com/api/sheets"
-  const BACKEND_URL = 'https://backend-rs87.vercel.app/api/sheets';
+  const BACKEND_URL = 'https://dnd-character-sheet-project-v0-3.vercel.app/api/sheets';
 
   const urlParams = new URLSearchParams(window.location.search);
   let cloudId = urlParams.get('id') || null;
@@ -1642,6 +1652,21 @@
     ['saveBtn','shareBtn','resetBtn','importInput'].forEach(id=>{
       const el = document.getElementById(id);
       if(el) el.disabled = true;
+    });
+  }
+
+  function unlockFromViewOnly(){
+    isViewOnly = false;
+    document.getElementById('viewOnlyBanner').style.display = 'none';
+    document.querySelectorAll('.sheet input, .sheet select, .sheet textarea').forEach(el=>{
+      el.disabled = false;
+    });
+    document.querySelectorAll('.sheet button').forEach(btn=>{
+      btn.disabled = false;
+    });
+    ['saveBtn','shareBtn','resetBtn','importInput'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.disabled = false;
     });
   }
 
@@ -2056,9 +2081,29 @@
   document.getElementById('longRestBtn').addEventListener('click', longRest);
 
   document.getElementById('resetBtn').addEventListener('click', ()=>{
-    if(!confirm('Clear the entire sheet? This cannot be undone.')) return;
+    const msg = cloudId
+      ? 'Clear all fields on this character? This still saves to the same shared link when you next save — for a separate character, use "New Character" instead.'
+      : 'Clear the entire sheet? This cannot be undone.';
+    if(!confirm(msg)) return;
     apply({});
     scheduleSave();
+  });
+
+  document.getElementById('newCharBtn').addEventListener('click', ()=>{
+    const msg = cloudId
+      ? 'Start a brand new character? This detaches from the one currently loaded (that saved character is safe — you\'ll just stop editing it here) and gives you a blank sheet.'
+      : 'Start a brand new character? Any unsaved changes on this sheet will be lost.';
+    if(!confirm(msg)) return;
+
+    // Fully detach from whatever sheet/link is currently loaded
+    cloudId = null;
+    cloudEditKey = null;
+    window.history.pushState({}, '', window.location.pathname);
+    document.getElementById('sharePanel').style.display = 'none';
+    if(isViewOnly) unlockFromViewOnly();
+
+    apply({});
+    statusText.textContent = 'New character sheet';
   });
 
   loadOnStart();
